@@ -11,10 +11,7 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -43,6 +40,7 @@ public class PrintWordsJob implements Job {
     }
 
     private static final SqlUtil sqlUtil = new SqlUtil();
+
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 
@@ -67,15 +65,31 @@ public class PrintWordsJob implements Job {
         MongoCredential mongoCredential = MongoCredential.createCredential(username, "admin", password.toCharArray());
         MongoClient mongoClient = new MongoClient(listHost, mongoCredential, build);
 
-
         List<String> codelist = jdbcTemplate.queryForList("select distinct code from device", String.class);
 
-        for (String s:codelist) {
+        for (String s : codelist) {
             MongoDatabase device = mongoClient.getDatabase(dbName);
+
             MongoCollection<Document> collection = device.getCollection(s);
-            BasicDBObject bso = new BasicDBObject();
-            bso.append("", TimeUtil.getTodayStartMills());
-            collection.countDocuments();
+
+            Document document = new Document();
+            document.put("$or", Arrays.asList(new Document("no1_frequency_oper", 1), new Document("no1_powerfrequency_oper", 1)));
+            long l = collection.countDocuments(document);
+            Document document1 = new Document();
+            document1.put("$or", Arrays.asList(new Document("no2_frequency_oper", 1), new Document("no2_powerfrequency_oper", 1)));
+            long l1 = collection.countDocuments(document1);
+            Document document2 = new Document();
+            document2.put("$or", Arrays.asList(new Document("no3_frequency_oper", 1), new Document("no3_powerfrequency_oper", 1)));
+            long l2 = collection.countDocuments(document2);
+
+            String strDateFormat = "yyyyMMdd";
+            SimpleDateFormat sdf = new SimpleDateFormat(strDateFormat);
+            String format = sdf.format(new Date(TimeUtil.getLastDayStartMills()));
+            device.createCollection(format);
+            MongoCollection<Document> collection1 = device.getCollection(format);
+            Document insert = new Document();
+            insert.put("pumpOneRunTime",new Document().append("pumpOne",l).append("pumpTwo",l1).append("pumpThree",l2));
+            collection1.insertOne(insert);
         }
 
 

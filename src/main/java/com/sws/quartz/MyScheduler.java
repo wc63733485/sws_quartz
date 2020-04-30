@@ -13,7 +13,8 @@ public class MyScheduler {
 
         CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity("trigger1", "triggerGroup1")
                 .startNow()//立即生效
-                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 0 * * ?"))
+                .withSchedule(CronScheduleBuilder.cronSchedule("0/5 * * * * ?"))
+//                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 1 * * ?"))
                 .build();
 
         //4、执行
